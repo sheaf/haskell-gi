@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RecordWildCards, PatternGuards #-}
 -- | Parsing type information from GIR files.
 module Data.GI.GIR.Type
@@ -8,6 +9,8 @@ module Data.GI.GIR.Type
     , parseOptionalType
     ) where
 
+#include "HsBaseConfig.h"
+
 import Data.Maybe (catMaybes)
 #if !MIN_VERSION_base(4,11,0)
 import Data.Monoid ((<>))
@@ -16,7 +19,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Foreign.Storable (sizeOf)
 import Foreign.C (CShort, CUShort, CSize, CTime)
-import System.Posix.Types (CSsize, COff, CDev, CGid, CPid, CSocklen, CUid)
+import System.Posix.Types
 
 import Data.GI.GIR.BasicTypes (Type(..), BasicType(..))
 import Data.GI.GIR.Parser
@@ -51,24 +54,38 @@ nameToBasicType "gshort"   =
   Just $ intToBasicType "short" (sizeOf (0 :: CShort)) True
 nameToBasicType "gushort"  =
   Just $ intToBasicType "ushort" (sizeOf (0 :: CUShort)) False
+#if defined(HTYPE_SSIZE_T)
 nameToBasicType "gssize"   =
   Just $ intToBasicType "ssize" (sizeOf (0 :: CSsize)) True
+#endif
 nameToBasicType "gsize"    =
   Just $ intToBasicType "size" (sizeOf (0 :: CSize)) False
 nameToBasicType n@"time_t" =
   Just $ intToBasicType n (sizeOf (0 :: CTime)) ((-1 :: CTime) < 0)
+#if defined(HTYPE_OFF_T)
 nameToBasicType n@"off_t"  =
   Just $ intToBasicType n (sizeOf (0 :: COff)) ((-1 :: COff) < 0)
+#endif
+#if defined(HTYPE_DEV_T)
 nameToBasicType n@"dev_t"  =
   Just $ intToBasicType n (sizeOf (0 :: CDev)) ((-1 :: CDev) < 0)
+#endif
+#if defined(HTYPE_GID_T)
 nameToBasicType n@"gid_t"  =
   Just $ intToBasicType n (sizeOf (0 :: CGid)) ((-1 :: CGid) < 0)
+#endif
+#if defined(HTYPE_PID_T)
 nameToBasicType n@"pid_t"  =
   Just $ intToBasicType n (sizeOf (0 :: CPid)) ((-1 :: CPid) < 0)
+#endif
+#if defined(HTYPE_SOCKLEN_T)
 nameToBasicType n@"socklen_t"  =
   Just $ intToBasicType n (sizeOf (0 :: CSocklen)) ((-1 :: CSocklen) < 0)
+#endif
+#if defined(HTYPE_UID_T)
 nameToBasicType n@"uid_t"  =
   Just $ intToBasicType n (sizeOf (0 :: CUid)) ((-1 :: CUid) < 0)
+#endif
 nameToBasicType _          = Nothing
 
 -- | Given the size and signedness of a C integer type, return a `BasicType`.
